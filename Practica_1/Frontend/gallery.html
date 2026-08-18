@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cinema — Cartelera</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav id="main-nav"></nav>
+  <main>
+    <h1>Cartelera</h1>
+    <div id="gallery" class="gallery-grid">
+      <p class="empty-state">Cargando peliculas...</p>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      renderNav("gallery.html");
+      loadMovies();
+    }
+
+    async function loadMovies() {
+      const gallery = document.getElementById("gallery");
+      try {
+        const movies = await Api.getMovies();
+
+        if (movies.length === 0) {
+          gallery.innerHTML = '<p class="empty-state">Todavia no hay peliculas cargadas.</p>';
+          return;
+        }
+
+        gallery.innerHTML = movies.map(renderMovieCard).join("");
+
+        gallery.querySelectorAll("[data-add-id]").forEach((btn) => {
+          btn.addEventListener("click", () => addToPlaylist(btn.dataset.addId, btn));
+        });
+      } catch (err) {
+        gallery.innerHTML = `<p class="empty-state">No se pudo cargar la cartelera: ${err.message}</p>`;
+      }
+    }
+
+    function renderMovieCard(movie) {
+      const disponible = movie.estado === "Disponible";
+      const actionHtml = disponible
+        ? `<button data-add-id="${movie.id_pelicula}">Agregar a mi lista</button>`
+        : `<span class="badge proximo" style="margin: 0.6rem 0.9rem 0.9rem; text-align:center;">Proximo estreno</span>`;
+
+      return `
+        <article class="movie-card">
+          <img src="${imageUrl(movie.poster)}" alt="Poster de ${movie.titulo}" />
+          <div class="movie-info">
+            <h3>${movie.titulo}</h3>
+            <span class="meta">${movie.director} · ${movie.anio_estreno}</span>
+            <span class="badge ${disponible ? "disponible" : "proximo"}">${movie.estado}</span>
+          </div>
+          ${actionHtml}
+        </article>
+      `;
+    }
+
+    async function addToPlaylist(idPelicula, btn) {
+      btn.disabled = true;
+      try {
+        await Api.addToPlaylist(user.id_usuario, Number(idPelicula));
+        showToast("Pelicula agregada a tu lista de reproduccion");
+      } catch (err) {
+        showToast(err.message, true);
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

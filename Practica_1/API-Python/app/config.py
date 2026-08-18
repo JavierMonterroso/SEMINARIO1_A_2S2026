@@ -7,6 +7,11 @@ class Settings(BaseSettings):
     db_user: str
     db_password: str
 
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_region: str
+    s3_bucket_images: str
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8"
     )

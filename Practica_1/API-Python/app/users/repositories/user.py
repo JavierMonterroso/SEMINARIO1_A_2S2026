@@ -63,6 +63,7 @@ def get_user_by_id(id_usuario: int):
             id_usuario,
             correo,
             nombre_completo,
+            contrasena,
             foto_perfil
         FROM usuario
         WHERE id_usuario = %s;

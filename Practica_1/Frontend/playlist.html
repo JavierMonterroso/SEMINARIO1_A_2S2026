@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cinema — Mi Lista</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav id="main-nav"></nav>
+  <main>
+    <h1>Mi lista de reproduccion</h1>
+    <div id="playlist">
+      <p class="empty-state">Cargando...</p>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      renderNav("playlist.html");
+      loadPlaylist();
+    }
+
+    async function loadPlaylist() {
+      const container = document.getElementById("playlist");
+      try {
+        const items = await Api.getPlaylist(user.id_usuario);
+
+        if (items.length === 0) {
+          container.innerHTML = '<p class="empty-state">Todavia no agregaste peliculas a tu lista.</p>';
+          return;
+        }
+
+        container.innerHTML = items.map(renderPlaylistItem).join("");
+
+        items.forEach((item) => {
+          const el = document.getElementById(`item-${item.id_pelicula}`);
+          el.addEventListener("click", (event) => {
+            if (event.target.closest(".remove-btn")) return;
+            window.open(item.url_contenido, "_blank", "noopener");
+          });
+
+          el.querySelector(".remove-btn").addEventListener("click", () => removeItem(item.id_pelicula));
+        });
+      } catch (err) {
+        container.innerHTML = `<p class="empty-state">No se pudo cargar tu lista: ${err.message}</p>`;
+      }
+    }
+
+    function renderPlaylistItem(item) {
+      return `
+        <div class="playlist-item" id="item-${item.id_pelicula}">
+          <img src="${imageUrl(item.poster)}" alt="Poster de ${item.titulo}" />
+          <div class="info">
+            <h3>${item.titulo}</h3>
+            <span class="meta">${item.director} · ${item.anio_estreno}</span>
+          </div>
+          <button class="remove-btn">Eliminar</button>
+        </div>
+      `;
+    }
+
+    async function removeItem(idPelicula) {
+      try {
+        await Api.removeFromPlaylist(user.id_usuario, idPelicula);
+        showToast("Pelicula eliminada de tu lista");
+        loadPlaylist();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,7 +1,15 @@
 const express = require('express');
 const { getAllMovies, getMovieById } = require('./repository');
+const { isNumericId } = require('../utils/validators');
 
 const router = express.Router();
+
+router.param('idPelicula', (req, res, next, value) => {
+  if (!isNumericId(value)) {
+    return res.status(400).json({ detail: 'id_pelicula debe ser numérico' });
+  }
+  next();
+});
 
 router.get('/movies', async (req, res, next) => {
   try {
