@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cinema — Iniciar sesion</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <h1>Cinema</h1>
+    <form id="login-form">
+      <label>
+        Correo electronico
+        <input type="email" id="correo" required />
+      </label>
+      <label>
+        Contrasena
+        <input type="password" id="contrasena" required />
+      </label>
+      <p class="error-text" id="error-text"></p>
+      <button type="submit" class="primary">Iniciar sesion</button>
+    </form>
+    <p class="switch">¿No tienes cuenta? <a href="register.html">Registrate</a></p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    if (getSession()) {
+      window.location.href = "gallery.html";
+    }
+
+    const form = document.getElementById("login-form");
+    const errorText = document.getElementById("error-text");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorText.textContent = "";
+
+      const correo = document.getElementById("correo").value.trim();
+      const contrasena = document.getElementById("contrasena").value;
+
+      if (!isValidEmail(correo)) {
+        errorText.textContent = "Ingresa un correo valido.";
+        return;
+      }
+
+      const submitBtn = form.querySelector("button");
+      submitBtn.disabled = true;
+
+      try {
+        const result = await Api.login(correo, contrasena);
+        saveSession(result.user);
+        window.location.href = "gallery.html";
+      } catch (err) {
+        errorText.textContent = err.message;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
