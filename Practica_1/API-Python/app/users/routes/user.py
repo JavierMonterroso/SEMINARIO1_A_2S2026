@@ -1,3 +1,4 @@
+import psycopg
 from fastapi import APIRouter, HTTPException, status
 
 from app.users.repositories.user import (
@@ -36,12 +37,18 @@ def register_user(user: UserRegister):
 
     hashed_password = hash_password_md5(user.contrasena)
 
-    new_user = create_user(
-        correo=user.correo,
-        nombre_completo=user.nombre_completo,
-        contrasena=hashed_password,
-        foto_perfil=user.foto_perfil
-    )
+    try:
+        new_user = create_user(
+            correo=user.correo,
+            nombre_completo=user.nombre_completo,
+            contrasena=hashed_password,
+            foto_perfil=user.foto_perfil
+        )
+    except psycopg.errors.UniqueViolation:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El correo ya está registrado"
+        )
 
     return new_user
 
@@ -99,13 +106,24 @@ def edit_user_profile(
     id_usuario: int,
     user: UserUpdate
 ):
-    if (
-        user.nombre_completo is None
-        and user.foto_perfil is None
-    ):
+    if user.nombre_completo is None and user.foto_perfil is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Debe enviar al menos un campo para actualizar"
+        )
+
+    current_user = get_user_by_id(id_usuario)
+
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    if current_user["contrasena"] != hash_password_md5(user.contrasena_actual):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Contraseña actual incorrecta"
         )
 
     updated_user = update_user_profile(
@@ -113,11 +131,5 @@ def edit_user_profile(
         nombre_completo=user.nombre_completo,
         foto_perfil=user.foto_perfil
     )
-
-    if updated_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario no encontrado"
-        )
 
     return updated_user

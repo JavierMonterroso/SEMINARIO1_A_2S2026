@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 
 
 class UserRegister(BaseModel):
@@ -14,17 +14,9 @@ class UserLogin(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    nombre_completo: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=150
-    )
-
-    foto_perfil: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=500
-    )
+    contrasena_actual: str
+    nombre_completo: str | None = None
+    foto_perfil: str | None = None
 
 
 class UserResponse(BaseModel):
