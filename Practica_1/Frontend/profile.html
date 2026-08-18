@@ -63,18 +63,21 @@
       const fotoPerfil = document.getElementById("foto_perfil").files[0];
       const contrasenaActual = document.getElementById("contrasena_actual").value;
 
-      const formData = new FormData();
-      formData.append("nombre_completo", nombreCompleto);
-      formData.append("contrasena_actual", contrasenaActual);
-      if (fotoPerfil) {
-        formData.append("foto_perfil", fotoPerfil);
-      }
-
       const submitBtn = form.querySelector("button");
       submitBtn.disabled = true;
 
       try {
-        const updatedUser = await Api.updateProfile(user.id_usuario, formData);
+        let fotoPerfilPath;
+        if (fotoPerfil) {
+          const result = await Api.uploadImage(fotoPerfil, "perfil");
+          fotoPerfilPath = result.path;
+        }
+
+        const updatedUser = await Api.updateProfile(user.id_usuario, {
+          nombre_completo: nombreCompleto,
+          foto_perfil: fotoPerfilPath,
+          contrasena_actual: contrasenaActual
+        });
         saveSession(updatedUser);
         fillForm(updatedUser);
         showToast("Perfil actualizado");

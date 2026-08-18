@@ -23,11 +23,18 @@ async function apiRequest(path, { method = "GET", json, formData } = {}) {
 const Api = {
   login: (correo, contrasena) => apiRequest("/login", { method: "POST", json: { correo, contrasena } }),
 
-  register: (formData) => apiRequest("/register", { method: "POST", formData }),
+  // tipo: "perfil" o "pelicula". Devuelve { path: "Fotos_Perfil/xxx.jpg" }.
+  uploadImage: (file, tipo) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiRequest(`/uploads/${tipo}`, { method: "POST", formData });
+  },
+
+  register: (payload) => apiRequest("/register", { method: "POST", json: payload }),
 
   getUser: (idUsuario) => apiRequest(`/users/${idUsuario}`),
 
-  updateProfile: (idUsuario, formData) => apiRequest(`/users/${idUsuario}`, { method: "PATCH", formData }),
+  updateProfile: (idUsuario, payload) => apiRequest(`/users/${idUsuario}`, { method: "PATCH", json: payload }),
 
   getMovies: () => apiRequest("/movies"),
 

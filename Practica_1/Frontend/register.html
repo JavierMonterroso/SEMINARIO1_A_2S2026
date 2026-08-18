@@ -64,17 +64,19 @@
         return;
       }
 
-      const formData = new FormData();
-      formData.append("correo", correo);
-      formData.append("nombre_completo", nombreCompleto);
-      formData.append("contrasena", contrasena);
-      formData.append("foto_perfil", fotoPerfil);
-
       const submitBtn = form.querySelector("button");
       submitBtn.disabled = true;
 
       try {
-        const user = await Api.register(formData);
+        const { path: fotoPerfilPath } = await Api.uploadImage(fotoPerfil, "perfil");
+
+        const user = await Api.register({
+          correo,
+          nombre_completo: nombreCompleto,
+          contrasena,
+          foto_perfil: fotoPerfilPath
+        });
+
         saveSession(user);
         showToast("Cuenta creada correctamente");
         window.location.href = "gallery.html";
