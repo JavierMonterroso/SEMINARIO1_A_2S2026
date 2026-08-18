@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cinema — Mi Perfil</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav id="main-nav"></nav>
+  <main>
+    <h1>Mi perfil</h1>
+    <div class="profile-card">
+      <img id="photo-preview" class="profile-photo-preview" src="" alt="Foto de perfil" />
+      <form id="profile-form">
+        <label>
+          Correo
+          <input type="email" id="correo" disabled />
+        </label>
+        <label>
+          Nombre completo
+          <input type="text" id="nombre_completo" />
+        </label>
+        <label>
+          Nueva foto de perfil (opcional)
+          <input type="file" id="foto_perfil" accept="image/*" />
+        </label>
+        <label>
+          Contrasena actual (requerida para guardar cambios)
+          <input type="password" id="contrasena_actual" required />
+        </label>
+        <p class="error-text" id="error-text"></p>
+        <button type="submit" class="primary">Guardar cambios</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    const user = requireAuth();
+    const form = document.getElementById("profile-form");
+    const errorText = document.getElementById("error-text");
+
+    if (user) {
+      renderNav("profile.html");
+      fillForm(user);
+    }
+
+    function fillForm(currentUser) {
+      document.getElementById("correo").value = currentUser.correo;
+      document.getElementById("nombre_completo").value = currentUser.nombre_completo;
+      document.getElementById("photo-preview").src = imageUrl(currentUser.foto_perfil);
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorText.textContent = "";
+
+      const nombreCompleto = document.getElementById("nombre_completo").value.trim();
+      const fotoPerfil = document.getElementById("foto_perfil").files[0];
+      const contrasenaActual = document.getElementById("contrasena_actual").value;
+
+      const formData = new FormData();
+      formData.append("nombre_completo", nombreCompleto);
+      formData.append("contrasena_actual", contrasenaActual);
+      if (fotoPerfil) {
+        formData.append("foto_perfil", fotoPerfil);
+      }
+
+      const submitBtn = form.querySelector("button");
+      submitBtn.disabled = true;
+
+      try {
+        const updatedUser = await Api.updateProfile(user.id_usuario, formData);
+        saveSession(updatedUser);
+        fillForm(updatedUser);
+        showToast("Perfil actualizado");
+      } catch (err) {
+        errorText.textContent = err.message;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
