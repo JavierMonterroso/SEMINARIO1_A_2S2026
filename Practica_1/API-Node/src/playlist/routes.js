@@ -1,6 +1,7 @@
 const express = require('express');
 const { getUserById } = require('../users/repository');
 const { getMovieById } = require('../movies/repository');
+const { isNumericId } = require('../utils/validators');
 const {
   getPlaylistItem,
   addMovieToPlaylist,
@@ -9,6 +10,20 @@ const {
 } = require('./repository');
 
 const router = express.Router();
+
+router.param('idUsuario', (req, res, next, value) => {
+  if (!isNumericId(value)) {
+    return res.status(400).json({ detail: 'id_usuario debe ser numérico' });
+  }
+  next();
+});
+
+router.param('idPelicula', (req, res, next, value) => {
+  if (!isNumericId(value)) {
+    return res.status(400).json({ detail: 'id_pelicula debe ser numérico' });
+  }
+  next();
+});
 
 router.post('/users/:idUsuario/playlist', async (req, res, next) => {
   try {
