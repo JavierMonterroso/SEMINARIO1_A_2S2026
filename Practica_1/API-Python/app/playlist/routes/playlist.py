@@ -29,6 +29,12 @@ def add_to_playlist(
     id_usuario: int,
     item: PlaylistAdd
 ):
+    if id_usuario < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Datos de solicitud inválidos"
+        )
+
     user = get_user_by_id(id_usuario)
 
     if user is None:
@@ -67,6 +73,12 @@ def add_to_playlist(
     response_model=list[PlaylistMovieResponse]
 )
 def get_playlist(id_usuario: int):
+    if id_usuario < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Datos de solicitud inválidos"
+        )
+
     user = get_user_by_id(id_usuario)
 
     if user is None:
@@ -85,6 +97,12 @@ def delete_from_playlist(
     id_usuario: int,
     id_pelicula: int
 ):
+    if id_usuario < 1 or id_pelicula < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Datos de solicitud inválidos"
+        )
+
     user = get_user_by_id(id_usuario)
 
     if user is None:

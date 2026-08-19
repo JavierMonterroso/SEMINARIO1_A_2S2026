@@ -5,8 +5,8 @@ const { isNumericId } = require('../utils/validators');
 const router = express.Router();
 
 router.param('idPelicula', (req, res, next, value) => {
-  if (!isNumericId(value)) {
-    return res.status(400).json({ detail: 'id_pelicula debe ser numérico' });
+  if (!isNumericId(value) || Number(value) < 1) {
+    return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
   }
   next();
 });

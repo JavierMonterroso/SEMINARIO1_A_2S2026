@@ -1,11 +1,14 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PlaylistAdd(BaseModel):
-    id_pelicula: int
+    id_pelicula: int = Field(
+        gt=0,
+        strict=True
+    )
 
 
 class PlaylistResponse(BaseModel):

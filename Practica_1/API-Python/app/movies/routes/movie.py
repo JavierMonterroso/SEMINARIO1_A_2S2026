@@ -13,6 +13,12 @@ def list_movies():
 
 @router.get("/movies/{id_pelicula}", response_model=MovieResponse)
 def get_movie(id_pelicula: int):
+    if id_pelicula < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Datos de solicitud inválidos"
+        )
+
     movie = get_movie_by_id(id_pelicula)
 
     if not movie:

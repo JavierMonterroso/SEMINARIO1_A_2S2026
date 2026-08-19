@@ -20,7 +20,7 @@ async function addMovieToPlaylist(idUsuario, idPelicula) {
 
 async function getUserPlaylist(idUsuario) {
   const { rows } = await pool.query(
-    `SELECT p.id_pelicula, p.titulo, p.director, p.anio_estreno, p.url_contenido, p.poster, p.estado, lr.fecha_agregado
+    `SELECT lr.id_lista, lr.id_usuario, p.id_pelicula, p.titulo, p.director, p.anio_estreno, p.url_contenido, p.poster, p.estado, lr.fecha_agregado
      FROM lista_reproduccion lr
      JOIN pelicula p ON p.id_pelicula = lr.id_pelicula
      WHERE lr.id_usuario = $1

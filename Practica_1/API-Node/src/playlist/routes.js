@@ -12,15 +12,15 @@ const {
 const router = express.Router();
 
 router.param('idUsuario', (req, res, next, value) => {
-  if (!isNumericId(value)) {
-    return res.status(400).json({ detail: 'id_usuario debe ser numérico' });
+  if (!isNumericId(value) || Number(value) < 1) {
+    return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
   }
   next();
 });
 
 router.param('idPelicula', (req, res, next, value) => {
-  if (!isNumericId(value)) {
-    return res.status(400).json({ detail: 'id_pelicula debe ser numérico' });
+  if (!isNumericId(value) || Number(value) < 1) {
+    return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
   }
   next();
 });
@@ -28,7 +28,11 @@ router.param('idPelicula', (req, res, next, value) => {
 router.post('/users/:idUsuario/playlist', async (req, res, next) => {
   try {
     const { idUsuario } = req.params;
-    const { id_pelicula } = req.body;
+    const { id_pelicula } = req.body || {};
+
+    if (!Number.isInteger(id_pelicula) || id_pelicula < 1) {
+      return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
+    }
 
     const user = await getUserById(idUsuario);
     if (!user) {

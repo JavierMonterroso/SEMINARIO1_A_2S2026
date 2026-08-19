@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 from app.database import get_connection
 from app.movies.routes.movie import router as movie_router
@@ -28,6 +29,17 @@ app.include_router(movie_router)
 app.include_router(user_router)
 app.include_router(playlist_router)
 app.include_router(upload_router)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError
+):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Datos de solicitud inválidos"}
+    )
 
 
 # Espejo del manejador global de errores de la API Node (server.js) - ante
@@ -61,7 +73,14 @@ def check():
 def db_check():
     with get_connection() as connection:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT NOW();")
+            cursor.execute(
+                """
+                SELECT TO_CHAR(
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                );
+                """
+            )
             server_time = cursor.fetchone()[0]
 
     return {

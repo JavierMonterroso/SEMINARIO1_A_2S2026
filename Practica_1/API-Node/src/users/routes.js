@@ -12,18 +12,30 @@ const {
 const router = express.Router();
 
 router.param('idUsuario', (req, res, next, value) => {
-  if (!isNumericId(value)) {
-    return res.status(400).json({ detail: 'id_usuario debe ser numérico' });
+  if (!isNumericId(value) || Number(value) < 1) {
+    return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
   }
   next();
 });
 
 router.post('/register', async (req, res, next) => {
   try {
-    const { correo, nombre_completo, contrasena, foto_perfil } = req.body;
+    const { correo, nombre_completo, contrasena, foto_perfil } = req.body || {};
 
-    if (!isValidEmail(correo)) {
-      return res.status(400).json({ detail: 'Correo electrónico inválido' });
+    const invalidData =
+      !isValidEmail(correo) ||
+      typeof nombre_completo !== 'string' ||
+      nombre_completo.length < 1 ||
+      nombre_completo.length > 150 ||
+      typeof contrasena !== 'string' ||
+      contrasena.length < 4 ||
+      contrasena.length > 128 ||
+      typeof foto_perfil !== 'string' ||
+      foto_perfil.length < 1 ||
+      foto_perfil.length > 500;
+
+    if (invalidData) {
+      return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
     }
 
     const existing = await getUserByEmail(correo);
@@ -56,10 +68,16 @@ router.post('/register', async (req, res, next) => {
 
 router.post('/login', async (req, res, next) => {
   try {
-    const { correo, contrasena } = req.body;
+    const { correo, contrasena } = req.body || {};
 
-    if (!isValidEmail(correo)) {
-      return res.status(400).json({ detail: 'Correo electrónico inválido' });
+    const invalidData =
+      !isValidEmail(correo) ||
+      typeof contrasena !== 'string' ||
+      contrasena.length < 4 ||
+      contrasena.length > 128;
+
+    if (invalidData) {
+      return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
     }
 
     const user = await getUserByEmail(correo);
@@ -96,10 +114,29 @@ router.get('/users/:idUsuario', async (req, res, next) => {
 
 router.patch('/users/:idUsuario', async (req, res, next) => {
   try {
-    const { contrasena_actual, nombre_completo, foto_perfil } = req.body;
+    const { contrasena_actual, nombre_completo, foto_perfil } = req.body || {};
 
-    if (nombre_completo === undefined && foto_perfil === undefined) {
-      return res.status(400).json({ detail: 'Debe enviar al menos un campo para actualizar' });
+    const hasNombreCompleto = nombre_completo !== undefined && nombre_completo !== null;
+    const hasFotoPerfil = foto_perfil !== undefined && foto_perfil !== null;
+
+    const invalidData =
+      typeof contrasena_actual !== 'string' ||
+      contrasena_actual.length < 4 ||
+      contrasena_actual.length > 128 ||
+      (!hasNombreCompleto && !hasFotoPerfil) ||
+      (hasNombreCompleto && (
+        typeof nombre_completo !== 'string' ||
+        nombre_completo.length < 1 ||
+        nombre_completo.length > 150
+      )) ||
+      (hasFotoPerfil && (
+        typeof foto_perfil !== 'string' ||
+        foto_perfil.length < 1 ||
+        foto_perfil.length > 500
+      ));
+
+    if (invalidData) {
+      return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
     }
 
     const currentUser = await getUserById(req.params.idUsuario);
@@ -107,13 +144,13 @@ router.patch('/users/:idUsuario', async (req, res, next) => {
       return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
 
-    if (currentUser.contrasena.trim() !== hashPasswordMd5(contrasena_actual || '')) {
+    if (currentUser.contrasena.trim() !== hashPasswordMd5(contrasena_actual)) {
       return res.status(401).json({ detail: 'Contraseña actual incorrecta' });
     }
 
     const updated = await updateUserProfile(req.params.idUsuario, {
-      nombreCompleto: nombre_completo,
-      fotoPerfil: foto_perfil,
+      nombreCompleto: hasNombreCompleto ? nombre_completo : undefined,
+      fotoPerfil: hasFotoPerfil ? foto_perfil : undefined,
     });
 
     res.json(updated);

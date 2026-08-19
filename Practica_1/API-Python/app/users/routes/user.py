@@ -87,6 +87,12 @@ def login_user(user: UserLogin):
     response_model=UserResponse
 )
 def get_user(id_usuario: int):
+    if id_usuario < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Datos de solicitud inválidos"
+        )
+
     user = get_user_by_id(id_usuario)
 
     if user is None:
@@ -106,10 +112,16 @@ def edit_user_profile(
     id_usuario: int,
     user: UserUpdate
 ):
+    if id_usuario < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Datos de solicitud inválidos"
+        )
+
     if user.nombre_completo is None and user.foto_perfil is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Debe enviar al menos un campo para actualizar"
+            detail="Datos de solicitud inválidos"
         )
 
     current_user = get_user_by_id(id_usuario)

@@ -28,7 +28,7 @@ router.post('/uploads/:tipo', upload.single('file'), async (req, res, next) => {
       return res.status(400).json({ detail: 'Tipo de imagen inválido (usar "perfil" o "pelicula")' });
     }
     if (!req.file) {
-      return res.status(400).json({ detail: 'Debe enviar un archivo en el campo "file"' });
+      return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
     }
 
     const ext = path.extname(req.file.originalname) || '.jpg';

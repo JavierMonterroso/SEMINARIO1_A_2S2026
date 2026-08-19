@@ -23,8 +23,13 @@ app.get('/check', (req, res) => {
 
 app.get('/db-check', async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT NOW()');
-    res.json({ status: 'OK', database: 'PostgreSQL', server_time: rows[0].now });
+    const { rows } = await pool.query(
+      `SELECT TO_CHAR(
+         CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+         'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+       ) AS server_time`
+    );
+    res.json({ status: 'OK', database: 'PostgreSQL', server_time: rows[0].server_time });
   } catch (err) {
     next(err);
   }
@@ -34,6 +39,22 @@ app.use(userRoutes);
 app.use(movieRoutes);
 app.use(playlistRoutes);
 app.use(uploadRoutes);
+
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
+  }
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ detail: 'El archivo no debe superar los 5 MB' });
+  }
+
+  if (err.name === 'MulterError') {
+    return res.status(400).json({ detail: 'Datos de solicitud inválidos' });
+  }
+
+  next(err);
+});
 
 app.use((err, req, res, next) => {
   console.error(err);
