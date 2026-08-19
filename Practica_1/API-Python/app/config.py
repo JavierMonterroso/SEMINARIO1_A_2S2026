@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     db_user: str
     db_password: str
 
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    aws_region: str
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_region: str = "us-east-2"
     s3_bucket_images: str
 
     model_config = SettingsConfigDict(
@@ -17,4 +17,3 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
-
