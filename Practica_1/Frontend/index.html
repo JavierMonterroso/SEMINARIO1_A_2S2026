@@ -4,33 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cinema — Iniciar sesion</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=3" />
 </head>
 <body class="auth-page">
   <div class="auth-card">
     <h1>Cinema</h1>
     <form id="login-form">
-      <label>
-        Correo electronico
-        <input type="email" id="correo" required />
-      </label>
-      <label>
-        Contrasena
-        <input type="password" id="contrasena" required />
-      </label>
+      <div class="form-field">
+        <label for="correo">Correo electrónico</label>
+        <input type="email" id="correo" autocomplete="email" required />
+      </div>
+      <div class="form-field">
+        <label for="contrasena">Contraseña</label>
+        <div class="password-input">
+          <input type="password" id="contrasena" autocomplete="current-password" required />
+          <button type="button" class="password-toggle" data-password-toggle="contrasena" aria-label="Mostrar contraseña">Mostrar</button>
+        </div>
+      </div>
       <p class="error-text" id="error-text"></p>
       <button type="submit" class="primary">Iniciar sesion</button>
     </form>
-    <p class="switch">¿No tienes cuenta? <a href="register.html">Registrate</a></p>
+    <p class="switch">¿No tienes cuenta? <a href="register.html?v=3">Regístrate</a></p>
   </div>
 
   <script src="js/config.js"></script>
-  <script src="js/ui.js"></script>
+  <script src="js/ui.js?v=3"></script>
   <script src="js/session.js"></script>
   <script src="js/api.js"></script>
   <script>
     if (getSession()) {
       window.location.href = "gallery.html";
+    } else {
+      showFlashMessage();
     }
 
     const form = document.getElementById("login-form");
@@ -48,7 +53,7 @@
         return;
       }
 
-      const submitBtn = form.querySelector("button");
+      const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
 
       try {
