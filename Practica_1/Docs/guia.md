@@ -1,4 +1,4 @@
-# Práctica 1 - CloudCinema
+# Práctica 1 - Cloud Cinema
 
 Este README sirve como **guía rápida de lo que ya quedó configurado** para que el resto del equipo pueda continuar sin perder el contexto.
 
@@ -28,7 +28,7 @@ La integración con S3 y otros componentes todavía se realizará después.
 ### EC2 Python
 
 | Dato | Valor |
-|---|---|
+| --- | --- |
 | Nombre | `cloudcinema-python-ec2` |
 | ID | `i-0f414b86993572a01` |
 | Tipo | `t3.micro` |
@@ -43,7 +43,7 @@ La integración con S3 y otros componentes todavía se realizará después.
 ### RDS PostgreSQL
 
 | Dato | Valor |
-|---|---|
+| --- | --- |
 | Identificador | `cloudcinema-db` |
 | Motor | PostgreSQL |
 | Base de datos | `cloudcinema_db` |
@@ -77,7 +77,7 @@ Este Security Group está asociado a la instancia EC2 del backend Python.
 Regla de entrada actual:
 
 | Tipo | Protocolo | Puerto | Origen |
-|---|---|---:|---|
+| --- | --- | ---: | --- |
 | SSH | TCP | 22 | `0.0.0.0/0` |
 
 > **Importante:** el acceso SSH desde `0.0.0.0/0` se dejó temporalmente para configuración y pruebas. Antes de la entrega final debe restringirse.
@@ -93,22 +93,10 @@ Este Security Group está asociado a Amazon RDS.
 Regla de entrada:
 
 | Tipo | Protocolo | Puerto | Origen |
-|---|---|---:|---|
+| --- | --- | ---: | --- |
 | PostgreSQL | TCP | 5432 | `cloudcinema-backend-sg` |
 
 Esto significa que PostgreSQL **no está abierto directamente a Internet**. Las conexiones al puerto `5432` se permiten desde recursos que utilicen `cloudcinema-backend-sg`.
-
-```text
-EC2 Backend
-cloudcinema-backend-sg
-        |
-        | TCP 5432
-        v
-cloudcinema-rds-sg
-        |
-        v
-PostgreSQL RDS
-```
 
 Si otra instancia backend necesita utilizar la misma base de datos, esta configuración debe tomarse en cuenta. **No abrir RDS con `0.0.0.0/0`.**
 
@@ -133,8 +121,6 @@ Base-de-Datos/
 El script `cloudcinema_schema.sql` contiene la estructura de la base de datos y puede utilizarse para recrearla.
 
 ### Diagrama
-
-![Diagrama de CloudCinema](./Base-de-Datos/CloudCinema.png)
 
 La tabla `lista_reproduccion` relaciona usuarios y películas mediante llaves foráneas.
 
@@ -172,7 +158,7 @@ app/
 ### Endpoints actuales
 
 | Método | Endpoint | Uso |
-|---|---|---|
+| --- | --- | --- |
 | `GET` | `/check` | Comprobar que el backend responde |
 | `POST` | `/register` | Registrar usuario |
 | `POST` | `/login` | Iniciar sesión |
@@ -219,8 +205,3 @@ DB_PASSWORD=CONTRASEÑA_REAL_DE_RDS
 ```
 
 Nunca subir contraseñas, `.env`, Access Keys ni archivos `.pem` al repositorio.
-
----
-
-
-
