@@ -1,0 +1,9 @@
+{
+  "name": "taskflow-upload-functions",
+  "version": "1.0.0",
+  "description": "Funciones Lambda para carga de imagenes y documentos de texto en TaskFlow + CloudDrive",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0"
+  }
+}
