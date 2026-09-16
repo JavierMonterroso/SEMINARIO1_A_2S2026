@@ -1,0 +1,12 @@
+[Unit]
+Description=TaskFlow + CloudDrive - Backend Python
+After=network.target
+
+[Service]
+WorkingDirectory=/home/ubuntu/Practica_2/Backend-python
+Environment="PATH=/home/ubuntu/Practica_2/Backend-python/venv/bin"
+ExecStart=/home/ubuntu/Practica_2/Backend-python/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 3000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
