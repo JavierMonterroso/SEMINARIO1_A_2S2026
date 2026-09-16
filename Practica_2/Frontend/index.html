@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow + CloudDrive - Iniciar sesion</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <h1>TaskFlow</h1>
+    <p class="auth-intro">Organiza tus tareas y administra tus archivos en la nube.</p>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-field">
+        <label for="username">Nombre de usuario</label>
+        <input type="text" id="username" required />
+      </div>
+      <div class="form-field">
+        <label for="password">Contrasena</label>
+        <input type="password" id="password" required />
+      </div>
+
+      <p id="error-box" class="error-text"></p>
+
+      <button type="submit" class="primary">Iniciar sesion</button>
+    </form>
+    <p class="switch">No tienes cuenta? <a href="register.html">Registrate</a></p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow - Mis tareas</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <nav id="main-nav">
+    <span class="brand">TaskFlow</span>
+    <div class="nav-links">
+      <a href="tasks.html" class="active">Tareas</a>
+      <a href="files.html">Archivos</a>
+      <button class="link-button" onclick="handleLogout()">Cerrar sesion</button>
+    </div>
+  </nav>
+
+  <main>
+    <h1>Mis tareas</h1>
+
+    <div class="panel">
+      <form id="task-form" onsubmit="handleCreateTask(event)">
+        <div class="form-field">
+          <label for="task-title">Titulo</label>
+          <input type="text" id="task-title" placeholder="Titulo de la tarea" required />
+        </div>
+        <div class="form-field">
+          <label for="task-description">Descripcion</label>
+          <textarea id="task-description" placeholder="Descripcion"></textarea>
+        </div>
+        <button type="submit" class="primary">Agregar tarea</button>
+      </form>
+    </div>
+
+    <ul id="task-list" class="item-list"></ul>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/tasks.js"></script>
+</body>
+</html>

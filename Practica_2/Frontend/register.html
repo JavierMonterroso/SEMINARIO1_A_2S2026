@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow + CloudDrive - Registro</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card register-card">
+    <h1>Crear cuenta</h1>
+    <p class="auth-intro">Regístrate para empezar a organizar tus tareas y archivos.</p>
+    <form id="register-form" onsubmit="handleRegister(event)">
+      <div class="form-field">
+        <label for="reg-username">Nombre de usuario</label>
+        <input type="text" id="reg-username" required />
+      </div>
+
+      <div class="form-field">
+        <label for="reg-email">Correo electronico</label>
+        <input type="email" id="reg-email" required />
+      </div>
+
+      <div class="form-field">
+        <label for="reg-password">Contrasena</label>
+        <input type="password" id="reg-password" required />
+      </div>
+
+      <div class="form-field">
+        <label for="reg-confirm-password">Confirmar contrasena</label>
+        <input type="password" id="reg-confirm-password" required />
+      </div>
+
+      <div class="form-field">
+        <label for="reg-profile-image">Imagen de perfil (opcional)</label>
+        <input type="file" id="reg-profile-image" accept="image/*" />
+      </div>
+
+      <p id="error-box" class="error-text"></p>
+
+      <button type="submit" class="primary">Registrarme</button>
+    </form>
+    <p class="switch">Ya tienes cuenta? <a href="index.html">Inicia sesion</a></p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
