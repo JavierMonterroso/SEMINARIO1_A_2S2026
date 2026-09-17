@@ -1,6 +1,8 @@
-// Cambien estas URLs segun el despliegue (AWS o Azure) antes de subir el build al bucket o contenedor correspondiente.
+// Completar por separado para el frontend de AWS y el de Azure.
+// API_BASE_URL: URL del balanceador con /api al final.
+// UPLOAD_*: rutas publicadas en API Gateway o API Management.
 const CONFIG = {
-  API_BASE_URL: 'http://CAMBIAR-DNS-DEL-BALANCEADOR/api',
-  UPLOAD_IMAGE_URL: 'http://CAMBIAR-API-GATEWAY-O-APIM/upload/image',
-  UPLOAD_TEXT_URL: 'http://CAMBIAR-API-GATEWAY-O-APIM/upload/text',
+  API_BASE_URL: '',
+  UPLOAD_IMAGE_URL: '',
+  UPLOAD_TEXT_URL: '',
 };

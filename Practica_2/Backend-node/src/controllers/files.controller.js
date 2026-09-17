@@ -1,18 +1,17 @@
 const pool = require('../config/db');
+const validation = require('../utils/validation');
+const { row } = require('../utils/serialize');
 
 async function listFiles(req, res) {
   const result = await pool.query(
-    'SELECT * FROM files WHERE user_id = $1 ORDER BY created_at DESC',
+    'SELECT * FROM files WHERE user_id = $1 ORDER BY created_at DESC, id DESC',
     [req.user.id]
   );
-  return res.json({ files: result.rows });
+  return res.json({ files: result.rows.map(row) });
 }
 
 async function registerFile(req, res) {
-  const { name, type, url } = req.body;
-  if (!name || !type || !url) {
-    return res.status(400).json({ error: 'name, type y url son obligatorios' });
-  }
+  const { name, type, url } = validation.file(req.body);
 
   const result = await pool.query(
     `INSERT INTO files (user_id, name, type, url)
@@ -20,19 +19,20 @@ async function registerFile(req, res) {
      RETURNING *`,
     [req.user.id, name, type, url]
   );
-  return res.status(201).json({ file: result.rows[0] });
+  return res.status(201).json({ file: row(result.rows[0]) });
 }
 
 async function getFile(req, res) {
+  const id = validation.id(req.params.id);
   const result = await pool.query(
     'SELECT * FROM files WHERE id = $1 AND user_id = $2',
-    [req.params.id, req.user.id]
+    [id, req.user.id]
   );
 
   if (result.rows.length === 0) {
     return res.status(404).json({ error: 'Archivo no encontrado' });
   }
-  return res.json({ file: result.rows[0] });
+  return res.json({ file: row(result.rows[0]) });
 }
 
 module.exports = { listFiles, registerFile, getFile };

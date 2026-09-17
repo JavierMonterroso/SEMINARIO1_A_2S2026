@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><title>Prueba de interfaz TaskFlow</title>
+<pre id="result">Ejecutando</pre><iframe id="app" style="width:100%;height:700px"></iframe>
+<script>
+const frame = document.getElementById('app');
+const results = [];
+const result = document.getElementById('result');
+function check(condition, label) {
+  if (!condition) throw new Error(label);
+  results.push(label);
+}
+async function wait(condition) {
+  for (let i = 0; i < 300; i++) {
+    if (condition()) return;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  throw new Error('Tiempo agotado esperando la interfaz');
+}
+async function page(path) {
+  await new Promise(resolve => { frame.onload = resolve; frame.src = path; });
+}
+function input(id, value) { frame.contentDocument.getElementById(id).value = value; }
+function attach(id, file) {
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  frame.contentDocument.getElementById(id).files = transfer.files;
+}
+async function main() {
+  const username = 'browser' + Date.now();
+  const imageBytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='), c => c.charCodeAt(0));
+  await page('/register.html');
+  input('reg-username', username);
+  input('reg-email', username + '@example.com');
+  input('reg-password', 'password123');
+  input('reg-confirm-password', 'password123');
+  attach('reg-profile-image', new File([imageBytes], 'perfil.png', { type:'image/png' }));
+  await frame.contentWindow.handleRegister({ preventDefault(){}, target:frame.contentDocument.getElementById('register-form') });
+  await wait(() => frame.contentWindow.location.pathname === '/index.html');
+  await wait(() => typeof frame.contentWindow.handleLogin === 'function');
+  check(frame.contentWindow.location.search.includes('registered=1'), 'Registro JSON con imagen');
+  input('username', username);
+  input('password', 'password123');
+  await frame.contentWindow.handleLogin({ preventDefault(){}, target:frame.contentDocument.querySelector('form') });
+  await wait(() => frame.contentWindow.location.pathname === '/tasks.html');
+  await wait(() => typeof frame.contentWindow.handleCreateTask === 'function');
+  check(true, 'Login y primera vista de tareas');
+  const title = '<img src=x onerror="window.INJECTED=true"> Tarea con comillas';
+  input('task-title', title);
+  input('task-description', 'Descripción <b>literal</b>');
+  await frame.contentWindow.handleCreateTask({ preventDefault(){}, target:frame.contentDocument.getElementById('task-form') });
+  const task = frame.contentDocument.querySelector('#task-list .item-card');
+  check(task.querySelector('strong').textContent === title && !task.querySelector('img') && !frame.contentWindow.INJECTED, 'Crear tarea y mostrar texto sin interpretar HTML');
+  check(task.textContent.includes('Creada:'), 'Mostrar fecha de creación');
+  const prompts = ['Título editado', 'Descripción editada'];
+  frame.contentWindow.prompt = () => prompts.shift();
+  task.querySelectorAll('button')[1].click();
+  await wait(() => frame.contentDocument.querySelector('#task-list strong').textContent === 'Título editado');
+  check(true, 'Editar título y descripción');
+  frame.contentDocument.querySelector('#task-list button').click();
+  await wait(() => !!frame.contentDocument.querySelector('#task-list .completed'));
+  check(true, 'Completar tarea');
+  frame.contentDocument.querySelector('#task-list button').click();
+  await wait(() => !frame.contentDocument.querySelector('#task-list .completed'));
+  check(true, 'Reabrir tarea');
+  frame.contentWindow.confirm = () => true;
+  frame.contentDocument.querySelectorAll('#task-list button')[2].click();
+  await wait(() => !frame.contentDocument.querySelector('#task-list .item-card'));
+  check(true, 'Eliminar tarea pendiente');
+  await page('/files.html');
+  await wait(() => typeof frame.contentWindow.handleUploadFile === 'function');
+  attach('file-input', new File(['Texto <b>literal</b>'], 'nota.txt', { type:'text/plain' }));
+  await frame.contentWindow.handleUploadFile({ preventDefault(){}, target:frame.contentDocument.getElementById('upload-form') });
+  check(frame.contentDocument.querySelector('#file-list strong').textContent === 'nota.txt', 'Cargar y listar documento');
+  check(frame.contentDocument.querySelector('#file-list .badge').textContent === 'text/plain', 'Mostrar tipo de archivo');
+  frame.contentDocument.querySelector('#file-list button').click();
+  await wait(() => frame.contentDocument.querySelector('dialog pre')?.textContent === 'Texto <b>literal</b>');
+  check(!frame.contentDocument.querySelector('dialog pre b'), 'Visualizar documento como texto');
+  frame.contentDocument.querySelector('dialog button').click();
+  attach('file-input', new File([imageBytes], 'foto.png', { type:'image/png' }));
+  await frame.contentWindow.handleUploadFile({ preventDefault(){}, target:frame.contentDocument.getElementById('upload-form') });
+  check(frame.contentDocument.querySelectorAll('#file-list .item-card').length === 2, 'Cargar imagen');
+  frame.contentDocument.querySelector('#file-list button').click();
+  await wait(() => { const image = frame.contentDocument.querySelector('dialog img'); return image?.complete && image.naturalWidth > 0; });
+  check(true, 'Visualizar imagen');
+  frame.contentDocument.querySelector('dialog button').click();
+  attach('file-input', new File([new Uint8Array([0,1,2,255])], 'datos.bin', { type:'application/octet-stream' }));
+  await frame.contentWindow.handleUploadFile({ preventDefault(){}, target:frame.contentDocument.getElementById('upload-form') });
+  check(frame.contentDocument.querySelectorAll('#file-list .item-card').length === 3, 'Admitir otros archivos binarios');
+  frame.contentWindow.handleLogout();
+  await wait(() => frame.contentWindow.location.pathname === '/index.html');
+  check(!frame.contentWindow.localStorage.getItem('token'), 'Cerrar sesión');
+  result.dataset.status = 'passed';
+  result.textContent = results.join('\n');
+}
+main().catch(error => { result.dataset.status='failed'; result.textContent=error.stack + '\n' + results.join('\n'); });
+</script></html>

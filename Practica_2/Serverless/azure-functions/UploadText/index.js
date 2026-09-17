@@ -1,5 +1,5 @@
 const { uploadToBlob } = require('../shared/uploadToBlob');
 
 module.exports = async function (context, req) {
-  context.res = await uploadToBlob('files/documents', req);
+  context.res = await uploadToBlob('files/documents', req, false);
 };

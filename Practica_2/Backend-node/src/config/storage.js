@@ -1,35 +1,27 @@
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { BlobServiceClient } = require('@azure/storage-blob');
 
-// Deje una sola interfaz (uploadBuffer) para que los controladores no sepan si corren sobre AWS o Azure.
-const provider = process.env.STORAGE_PROVIDER || 's3';
-
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
-
-async function uploadToS3(buffer, key, contentType) {
-  await s3Client.send(new PutObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET,
-    Key: key,
-    Body: buffer,
-    ContentType: contentType,
-    ACL: 'public-read',
-  }));
-  return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-}
-
-async function uploadToAzure(buffer, key, contentType) {
-  const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
-  const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER);
-  const blockBlobClient = containerClient.getBlockBlobClient(key);
-  await blockBlobClient.uploadData(buffer, { blobHTTPHeaders: { blobContentType: contentType } });
-  return blockBlobClient.url;
+function unavailable() {
+  const error = new Error('Almacenamiento no configurado');
+  error.status = 503;
+  throw error;
 }
 
 async function uploadBuffer(buffer, key, contentType) {
+  const provider = process.env.STORAGE_PROVIDER || 's3';
   if (provider === 'azure') {
-    return uploadToAzure(buffer, key, contentType);
+    if (!process.env.AZURE_STORAGE_CONNECTION_STRING || !process.env.AZURE_STORAGE_CONTAINER) unavailable();
+    const service = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    const blob = service.getContainerClient(process.env.AZURE_STORAGE_CONTAINER).getBlockBlobClient(key);
+    await blob.uploadData(buffer, { blobHTTPHeaders: { blobContentType: contentType } });
+    return blob.url;
   }
-  return uploadToS3(buffer, key, contentType);
+  if (provider !== 's3' || !process.env.AWS_REGION || !process.env.AWS_S3_BUCKET) unavailable();
+  const client = new S3Client({ region: process.env.AWS_REGION });
+  // Lectura publica mediante politica de bucket; no requiere ACL de objetos.
+  await client.send(new PutObjectCommand({ Bucket: process.env.AWS_S3_BUCKET, Key: key, Body: buffer, ContentType: contentType }));
+  const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+  return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${encodedKey}`;
 }
 
 module.exports = { uploadBuffer };

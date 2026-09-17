@@ -13,12 +13,12 @@
     <form id="register-form" onsubmit="handleRegister(event)">
       <div class="form-field">
         <label for="reg-username">Nombre de usuario</label>
-        <input type="text" id="reg-username" required />
+        <input type="text" id="reg-username" maxlength="50" required />
       </div>
 
       <div class="form-field">
         <label for="reg-email">Correo electronico</label>
-        <input type="email" id="reg-email" required />
+        <input type="email" id="reg-email" maxlength="255" required />
       </div>
 
       <div class="form-field">
@@ -32,8 +32,8 @@
       </div>
 
       <div class="form-field">
-        <label for="reg-profile-image">Imagen de perfil (opcional)</label>
-        <input type="file" id="reg-profile-image" accept="image/*" />
+        <label for="reg-profile-image">Imagen de perfil</label>
+        <input type="file" id="reg-profile-image" accept="image/*" required />
       </div>
 
       <p id="error-box" class="error-text"></p>

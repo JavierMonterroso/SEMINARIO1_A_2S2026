@@ -2,27 +2,20 @@ const pool = require('../config/db');
 const { hashPassword, comparePassword } = require('../utils/password');
 const { signToken } = require('../utils/jwt');
 const { uploadBuffer } = require('../config/storage');
+const { randomUUID } = require('crypto');
+const validation = require('../utils/validation');
+const { row } = require('../utils/serialize');
 
 async function register(req, res) {
-  const { username, email, password, confirmPassword } = req.body;
-
-  if (!username || !email || !password || !confirmPassword) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-  }
-  if (password !== confirmPassword) {
-    return res.status(400).json({ error: 'Las contrasenas no coinciden' });
-  }
+  const { username, email, password, profileImage } = validation.register(req.body);
 
   const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
   if (existing.rows.length > 0) {
     return res.status(409).json({ error: 'El nombre de usuario ya existe' });
   }
 
-  let profileImageUrl = null;
-  if (req.file) {
-    const key = `profile-images/${Date.now()}-${req.file.originalname}`;
-    profileImageUrl = await uploadBuffer(req.file.buffer, key, req.file.mimetype);
-  }
+  const key = `profile-images/${randomUUID()}-${profileImage.fileName.replace(/[\\/]/g, '_')}`;
+  const profileImageUrl = await uploadBuffer(profileImage.buffer, key, profileImage.contentType);
 
   const passwordHash = await hashPassword(password);
 
@@ -33,15 +26,11 @@ async function register(req, res) {
     [username, email, passwordHash, profileImageUrl]
   );
 
-  return res.status(201).json({ user: result.rows[0] });
+  return res.status(201).json({ user: row(result.rows[0]) });
 }
 
 async function login(req, res) {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Usuario y contrasena son obligatorios' });
-  }
+  const { username, password } = validation.login(req.body);
 
   const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
   const user = result.rows[0];

@@ -1,39 +1,90 @@
+import json
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from psycopg2.errors import UniqueViolation
+from . import config, database
 from .routers import auth, tasks, files
 
-app = FastAPI(title="TaskFlow + CloudDrive - Backend Python")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@asynccontextmanager
+async def lifespan(app):
+    config.validate()
+    database.initialize()
+    try:
+        yield
+    finally:
+        database.close()
 
 
-# Reescribi el formato de error de FastAPI (que por defecto usa "detail") para que
-# coincida con el backend de Node, que siempre responde {"error": "mensaje"}.
+app = FastAPI(title="TaskFlow + CloudDrive", lifespan=lifespan, redirect_slashes=False)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+def error(status, message):
+    return JSONResponse(status_code=status, content={"error": message}, headers={"X-Backend": "python", "Access-Control-Allow-Origin": "*"})
+
+
+def invalid_constant(value):
+    raise ValueError("JSON invalido")
+
+
+@app.middleware("http")
+async def normalize_request(request: Request, call_next):
+    # Aceptar las mismas rutas con o sin barra final, sin redirecciones.
+    request.scope["path"] = request.scope["path"].rstrip("/") or "/"
+    if request.method in ("POST", "PUT", "PATCH"):
+        content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+        if content_type != "application/json":
+            return error(415, "Se requiere Content-Type application/json")
+        raw = await request.body()
+        if len(raw) > 8 * 1024 * 1024:
+            return error(413, "La solicitud supera el limite de 8 MB")
+        try:
+            body = json.loads(raw or b"{}", parse_constant=invalid_constant)
+            if not isinstance(body, dict):
+                raise ValueError("JSON invalido")
+            request.state.json_body = body
+        except (ValueError, UnicodeDecodeError):
+            return error(400, "JSON invalido")
+    response = await call_next(request)
+    response.headers["X-Backend"] = "python"
+    return response
+
+
 @app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
+async def http_error(request: Request, exc: StarletteHTTPException):
+    if exc.status_code in (404, 405) and exc.detail in ("Not Found", "Method Not Allowed"):
+        return error(404, "Ruta no encontrada")
+    return error(exc.status_code, exc.detail)
 
 
-# Hice que los campos faltantes o invalidos respondan 400 igual que en Node,
-# en lugar del 422 con formato de lista que genera Pydantic por defecto.
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    first_error = exc.errors()[0]
-    field = first_error["loc"][-1]
-    return JSONResponse(status_code=400, content={"error": f"El campo '{field}' es obligatorio o invalido"})
+@app.exception_handler(UniqueViolation)
+async def duplicate_user(request: Request, exc: UniqueViolation):
+    return error(409, "El nombre de usuario ya existe")
+
+
+@app.exception_handler(Exception)
+async def internal_error(request: Request, exc: Exception):
+    logging.error("Error interno: %s", type(exc).__name__)
+    return error(500, "Error interno del servidor")
 
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "server": "python"}
+    try:
+        conn = database.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            return {"status": "ok"}
+        finally:
+            database.release_connection(conn)
+    except Exception:
+        return error(503, "Base de datos no disponible")
 
 
 app.include_router(auth.router, prefix="/api")

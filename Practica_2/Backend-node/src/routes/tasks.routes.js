@@ -8,7 +8,7 @@ const {
   deleteTask,
 } = require('../controllers/tasks.controller');
 
-const router = express.Router();
+const router = express.Router({ caseSensitive: true });
 router.use(requireAuth);
 
 router.get('/', listTasks);

@@ -356,3 +356,12 @@ button.primary:hover {
     justify-content: flex-end;
   }
 }
+
+button:disabled { opacity: 0.6; cursor: wait; }
+.user-summary { display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); }
+.user-summary img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.file-preview { max-width: min(90vw, 800px); max-height: 85vh; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; background: var(--surface); color: var(--text); }
+.file-preview::backdrop { background: rgba(0, 0, 0, 0.7); }
+.file-preview img { display: block; max-width: 100%; max-height: 60vh; margin-top: 1rem; }
+.file-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.item-info p, .item-info strong { overflow-wrap: anywhere; white-space: pre-wrap; }
