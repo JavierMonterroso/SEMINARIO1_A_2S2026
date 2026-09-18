@@ -1,21 +1,16 @@
 const pool = require('../config/db');
 const { hashPassword, comparePassword } = require('../utils/password');
 const { signToken } = require('../utils/jwt');
-const { uploadBuffer } = require('../config/storage');
-const { randomUUID } = require('crypto');
 const validation = require('../utils/validation');
 const { row } = require('../utils/serialize');
 
 async function register(req, res) {
-  const { username, email, password, profileImage } = validation.register(req.body);
+  const { username, email, password, profileImageUrl } = validation.register(req.body);
 
   const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
   if (existing.rows.length > 0) {
     return res.status(409).json({ error: 'El nombre de usuario ya existe' });
   }
-
-  const key = `profile-images/${randomUUID()}-${profileImage.fileName.replace(/[\\/]/g, '_')}`;
-  const profileImageUrl = await uploadBuffer(profileImage.buffer, key, profileImage.contentType);
 
   const passwordHash = await hashPassword(password);
 

@@ -1,9 +1,6 @@
-import base64
-import binascii
 import re
+from urllib.parse import urlsplit
 from fastapi import HTTPException
-
-MAX_FILE_SIZE = 5 * 1024 * 1024
 
 
 def fail(field):
@@ -35,24 +32,19 @@ def password(value, field):
     return result
 
 
-def upload(value, field="profileImage", image_only=True):
-    object_body(value, field)
-    name = text(value.get("fileName"), f"{field}.fileName", 255)
-    content_type = text(value.get("contentType"), f"{field}.contentType", 100)
-    if not re.fullmatch(r"[\w.+-]+/[\w.+-]+", content_type, re.ASCII) or (image_only and not content_type.startswith("image/")):
-        fail(f"{field}.contentType")
-    data = value.get("data")
-    if not isinstance(data, str) or not data or len(data) % 4:
-        fail(f"{field}.data")
+def public_url(value, field):
+    result = text(value, field, 4096)
+    if not re.fullmatch(r"https?://[^\s/?#]+(?:[/?#][^\s]*)?", result):
+        fail(field)
     try:
-        buffer = base64.b64decode(data, validate=True)
-    except (ValueError, binascii.Error):
-        fail(f"{field}.data")
-    if not buffer or base64.b64encode(buffer).decode("ascii") != data:
-        fail(f"{field}.data")
-    if len(buffer) > MAX_FILE_SIZE:
-        raise HTTPException(413, "El archivo supera el limite de 5 MB")
-    return {"fileName": name, "contentType": content_type, "buffer": buffer}
+        parsed = urlsplit(result)
+        if not parsed.hostname or parsed.username or parsed.password:
+            fail(field)
+        # Acceder al puerto también comprueba su formato y rango.
+        parsed.port
+    except ValueError:
+        fail(field)
+    return result
 
 
 def register(value):
@@ -65,7 +57,7 @@ def register(value):
     confirm = password(value.get("confirmPassword"), "confirmPassword")
     if plain != confirm:
         raise HTTPException(400, "Las contrasenas no coinciden")
-    return {"username": username, "email": email, "password": plain, "profileImage": upload(value.get("profileImage"))}
+    return {"username": username, "email": email, "password": plain, "profileImageUrl": public_url(value.get("profileImageUrl"), "profileImageUrl")}
 
 
 def login(value):
@@ -98,11 +90,11 @@ def file(value):
     object_body(value)
     name = text(value.get("name"), "name", 255)
     file_type = text(value.get("type"), "type", 100)
-    url = text(value.get("url"), "url", 4096)
+    url = public_url(value.get("url"), "url")
     if not re.fullmatch(r"[\w.+-]+/[\w.+-]+", file_type, re.ASCII):
         fail("type")
-    if not re.fullmatch(r"https?://[^\s/?#]+(?:[/?#][^\s]*)?", url):
-        fail("url")
+    if not file_type.startswith("image/") and (file_type != "text/plain" or not name.lower().endswith(".txt")):
+        fail("type")
     return {"name": name, "type": file_type, "url": url}
 
 

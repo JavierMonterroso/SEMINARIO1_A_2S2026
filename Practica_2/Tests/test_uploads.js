@@ -74,13 +74,6 @@ async function main() {
   const b = await azure.uploadToBlob('files/documents',{method:'POST',body},false);
   assert.equal(a.statusCode,503); assert.equal(b.status,503);
   assert.equal(JSON.stringify(JSON.parse(a.body)),JSON.stringify(b.body));
-  // El backend tambien debe cargar fotos sin ACL, respetar los bytes y codificar la URL.
-  process.env.AWS_S3_BUCKET = 'test-files';
-  process.env.STORAGE_PROVIDER = 's3';
-  const storage = load('Backend-node/src/config/storage.js');
-  const url = await storage.uploadBuffer(Buffer.from('image'),'profile-images/foto á #?.png','image/png');
-  assert.ok(url.includes('%20') && url.includes('%23') && url.includes('%3F'));
-  assert.equal(uploads.pop().ACL,undefined);
   console.log(`Funciones AWS/Azure: ${cases} casos de carga y comprobaciones de errores, limites, CORS y configuracion correctos`);
 }
 main().catch(error => { console.error(error); process.exitCode=1; });

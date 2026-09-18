@@ -15,13 +15,6 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_EXPIRES_IN_HOURS = int(os.getenv("JWT_EXPIRES_IN_HOURS", "24"))
 
-STORAGE_PROVIDER = os.getenv("STORAGE_PROVIDER", "s3")
-AWS_REGION = os.getenv("AWS_REGION")
-AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER")
-
-
 def validate():
     missing = [name for name in ("DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "JWT_SECRET") if not (globals()[name] or "").strip()]
     if missing:
