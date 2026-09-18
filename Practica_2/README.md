@@ -142,4 +142,34 @@ Storage Blob -> API Management -> Azure Function UploadImage -> Blob (archivos)
 
 ## Conclusión sobre las diferencias percibidas entre Azure y AWS
 
-<!-- PENDIENTE: llenar al terminar el despliegue de ambas nubes -->
+Desplegar la misma aplicación en los dos proveedores deja ver que los servicios
+son conceptualmente equivalentes (VM ↔ EC2, Load Balancer ↔ ELB, Blob ↔ S3,
+Functions ↔ Lambda, API Management ↔ API Gateway), pero la experiencia de
+aprovisionarlos difiere bastante.
+
+La fricción más grande no fue técnica sino de cuenta: una suscripción Azure
+Free Trial recién creada no tiene acceso real a capacidad de cómputo durante
+un período de verificación, y el error que devuelve (`SkuNotAvailable` por
+"restricción de capacidad") no distingue esto de una falta de capacidad real
+en la región. Probamos 9 regiones distintas y dos familias de VM antes de
+entender que el problema era la cuenta, no la infraestructura; la solución fue
+pasar a Pay-As-You-Go. AWS no impuso una restricción equivalente al crear los
+recursos de EC2.
+
+Azure CLI (`az`) permite scriptear casi toda la infraestructura —VMs, red,
+balanceador, storage, Function App— desde un único script bash, algo muy
+similar a lo que ofrece la CLI de AWS. La diferencia notable está en la
+calidad de los mensajes de error: varios comandos de `az` devuelven trazas de
+Python crudas en lugar de un mensaje claro, lo que hace la depuración más
+lenta. Azure API Management, además, no se pudo dejar completamente scriptado:
+importar las funciones y configurar la política de CORS requirió pasos
+manuales en el portal, mientras que el equivalente en API Gateway suele
+resolverse por completo vía CLI o IaC.
+
+También encontramos una diferencia de madurez entre versiones de runtime: el
+plan de Consumption de Azure Functions en Linux listaba Node 24 como
+soportado, pero desplegar con esa versión dejaba el Function App entero
+respondiendo 503; bajar a Node 22 lo resolvió de inmediato. Por lo demás, una
+vez sorteadas esas particularidades, ambas nubes lograron el mismo resultado
+funcional: dos backends balanceados con failover real, almacenamiento público
+para la web y los archivos, y carga de archivos vía funciones serverless.
