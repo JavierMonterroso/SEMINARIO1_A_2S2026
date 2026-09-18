@@ -20,13 +20,21 @@ Este documento cubre lo que exige el enunciado como manual técnico de entrega.
 
 ## Descripción de la arquitectura utilizada
 
+![Arquitectura AWS y Azure](Docs/arquitectura.png)
+
 ### AWS
 
-<!-- PENDIENTE: companero de AWS -->
+Dos instancias EC2 (`t3.micro`): `taskflow-node-ec2` y `taskflow-python-ec2`,
+con los backends Node.js y Python escuchando en el puerto 3000. El Application
+Load Balancer `taskflow-alb` reparte el tráfico entre ambas. El frontend
+estático se sirve desde un bucket S3 público. La base de datos es una
+instancia RDS PostgreSQL (`taskflow-db`). La carga de imágenes y documentos de
+texto se resuelve con dos funciones Lambda (`taskflow-upload-image`,
+`taskflow-upload-text`, runtime Python) expuestas mediante el API Gateway
+`taskflow-api`, con las rutas `/upload-image` y `/upload-text`.
 
-Backend Node.js y Python sobre EC2, balanceados con un Elastic Load Balancer,
-frontend estático en S3, base de datos en RDS PostgreSQL, y carga de archivos
-mediante Lambda expuesto con API Gateway.
+<!-- PENDIENTE: companero de AWS — confirmar/ampliar si falta algun detalle,
+     agregar el nombre del bucket S3 de la web estatica -->
 
 ### Azure
 
@@ -40,14 +48,6 @@ de imágenes y documentos de texto se resuelve con dos Azure Functions
 base de datos es la misma RDS PostgreSQL de AWS: Azure no monta base de datos
 propia, las VMs se conectan directo al RDS compartido.
 
-```text
-Usuario -> Storage Blob (web estática)
-Storage Blob -> Azure Load Balancer -> Backend Node.js (VM) -> RDS (AWS)
-                                     -> Backend Python (VM) -> RDS (AWS)
-Storage Blob -> API Management -> Azure Function UploadImage -> Blob (archivos)
-                                -> Azure Function UploadText  -> Blob (archivos)
-```
-
 ## Descripción de los usuarios IAM y sus políticas
 
 <!-- PENDIENTE: companero de AWS -->
@@ -56,47 +56,51 @@ Storage Blob -> API Management -> Azure Function UploadImage -> Blob (archivos)
 
 ### AWS
 
-<!-- PENDIENTE: companero de AWS -->
+<!-- PENDIENTE: companero de AWS — faltan S3 y la prueba de failover -->
 
 #### AWS S3
 
+<!-- PENDIENTE: companero de AWS -->
 <!-- CAPTURA: bucket de la web estática y bucket de archivos, ambos con acceso público -->
-![AWS S3](Docs/capturas/aws-s3.png)
 
 #### AWS EC2
 
 <!-- CAPTURA: las dos instancias EC2 (Node.js y Python) corriendo -->
-![AWS EC2](Docs/capturas/aws-ec2.png)
+![AWS EC2](Docs/capturas/01%20-%20Se%20muestra%20las%202%20instanacias%20en%20EC2%2C%20python%20y%20node.png)
 
 #### AWS Load Balancer
 
-<!-- CAPTURA: target group con las dos instancias healthy -->
-![AWS Load Balancer](Docs/capturas/aws-load-balancer.png)
+<!-- CAPTURA: lista de balanceadores de carga (taskflow-alb activo). Falta una
+     captura del target group mostrando las dos instancias como healthy. -->
+![AWS Load Balancer](Docs/capturas/06%20-%20Se%20muestra%20los%20target%20group%20de%20%20las%20dos%20instancias%20del%20balanceador%20de%20carga.png)
 
 #### AWS RDS
 
-<!-- CAPTURA: instancia de RDS PostgreSQL disponible -->
-![AWS RDS](Docs/capturas/aws-rds.png)
+<!-- CAPTURA: instancias de RDS PostgreSQL disponibles (taskflow-db) -->
+![AWS RDS](Docs/capturas/04%20-%20Se%20muestra%20las%20istancias%20de%20DB%20en%20postgres.png)
 
 #### AWS Lambda
 
-<!-- CAPTURA: las dos funciones Lambda (UploadImage y UploadText) -->
-![AWS Lambda](Docs/capturas/aws-lambda.png)
+<!-- CAPTURA: las dos funciones Lambda (taskflow-upload-image, taskflow-upload-text) -->
+![AWS Lambda](Docs/capturas/05%20-%20Se%20muestras%20el%20aws%20lambda.png)
 
 #### AWS API Gateway
 
-<!-- CAPTURA: rutas configuradas para las dos funciones Lambda -->
-![AWS API Gateway](Docs/capturas/aws-api-gateway.png)
+<!-- CAPTURA: API Gateway taskflow-api -->
+![AWS API Gateway](Docs/capturas/02%20-%20Se%20muestra%20el%20Gateway%20de%20API.png)
+
+<!-- CAPTURA: rutas /upload-image y /upload-text del API Gateway -->
+![AWS API Gateway - rutas](Docs/capturas/03%20-%20Se%20muestran%20las%20rutas%20del%20los%20endpoints%20del%20gateway.png)
 
 #### AWS IAM
 
-<!-- CAPTURA: usuario IAM con las políticas asignadas -->
-![AWS IAM](Docs/capturas/aws-iam.png)
+<!-- CAPTURA: usuario IAM P2_DEVELOPER -->
+![AWS IAM](Docs/capturas/00%20-%20Se%20muestra%20el%20usuario%20IAM%20AWS.png)
 
 #### Prueba de failover AWS
 
+<!-- PENDIENTE: companero de AWS -->
 <!-- CAPTURA: la app respondiendo con una instancia EC2 detenida -->
-![Prueba failover AWS](Docs/capturas/aws-failover.png)
 
 ### Azure
 
