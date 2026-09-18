@@ -2,7 +2,6 @@
 No se conectan a AWS. Ejecutar con las dependencias del backend Python instaladas.
 TEST_PG_PORT=55432 python Tests/test_contract.py
 """
-import base64
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
@@ -21,7 +20,7 @@ import httpx
 from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[1]
-IMAGE = {"fileName": "perfil.png", "contentType": "image/png", "data": base64.b64encode(b"test-image").decode()}
+IMAGE_URL = 'https://storage.example/profile%20image.png'
 SECRET = "test-only-shared-secret-that-is-at-least-32-bytes-long"
 
 
@@ -43,12 +42,9 @@ class Contracts(unittest.TestCase):
             cursor.execute((ROOT / 'Database/schema.sql').read_text())
         settings = {'DB_HOST': cls.pg['host'], 'DB_PORT': str(cls.pg['port']), 'DB_NAME': cls.db_name,
                     'DB_USER': cls.pg['user'], 'DB_PASSWORD': 'test-only-unused-with-local-trust',
-                    'JWT_SECRET': SECRET, 'JWT_EXPIRES_IN_HOURS': '24', 'AWS_REGION': 'us-east-2',
-                    'AWS_S3_BUCKET': '', 'STORAGE_PROVIDER': 's3'}
+                    'JWT_SECRET': SECRET, 'JWT_EXPIRES_IN_HOURS': '24'}
         os.environ.update(settings)
         sys.path.insert(0, str(ROOT / 'Backend-python'))
-        from app import storage
-        storage.upload_buffer = lambda *args: 'https://storage.example/profile.png'
         from app.main import app
         cls.python = TestClient(app, raise_server_exceptions=False)
         cls.python.__enter__()
@@ -73,6 +69,7 @@ class Contracts(unittest.TestCase):
             username = f'user{index}'
             response = client.post('/api/auth/register', json=cls.registration(username))
             assert response.status_code == 201, response.text
+            assert response.json()['user']['profile_image_url'] == IMAGE_URL
             cls.users.append(response.json()['user'])
             # Autenticar en el otro lenguaje comprueba tambien la compatibilidad de bcrypt.
             response = cls.clients[1-index].post('/api/auth/login', json={'username': username, 'password': 'password123'})
@@ -81,7 +78,7 @@ class Contracts(unittest.TestCase):
 
     @classmethod
     def registration(cls, username='new-user'):
-        return dict(username=username, email=username + '@example.com', password='password123', confirmPassword='password123', profileImage=IMAGE)
+        return dict(username=username, email=username + '@example.com', password='password123', confirmPassword='password123', profileImageUrl=IMAGE_URL)
 
     @classmethod
     def stop_node(cls):
@@ -125,6 +122,8 @@ class Contracts(unittest.TestCase):
             for path in ['/api/tasks', '/api/files']:
                 self.assertEqual(self.same('GET', path, headers=self.headers(index)).status_code, 200)
         with self.connection.cursor() as cursor:
+            cursor.execute("SELECT profile_image_url FROM users WHERE username IN ('user0', 'user1')")
+            self.assertEqual(cursor.fetchall(), [(IMAGE_URL,), (IMAGE_URL,)])
             cursor.execute('SELECT password_hash FROM users ORDER BY id')
             for hashed, in cursor.fetchall():
                 self.assertNotEqual(hashed, 'password123')
@@ -133,9 +132,9 @@ class Contracts(unittest.TestCase):
     def test_registration_and_login_errors(self):
         for body in [{}, {'username': 'x'}, {**self.registration(), 'confirmPassword': 'different'},
                      {**self.registration(), 'email': 'invalid'}, {**self.registration(), 'username': ' '},
-                     {**self.registration(), 'password': 'é'*37}, {**self.registration(), 'profileImage': None},
-                     {**self.registration(), 'profileImage': {**IMAGE, 'data': 'not-base64'}},
-                     {**self.registration(), 'profileImage': {**IMAGE, 'contentType': 'text/plain'}}]:
+                     {**self.registration(), 'password': 'é'*37}, {**self.registration(), 'profileImageUrl': None},
+                     *[{**self.registration(), 'profileImageUrl': value} for value in ['', 'javascript:alert(1)', 'data:image/png;base64,eA==', 'https://host/x y', {}, 'https://', 'https://@', 'https://host:invalid/x', 'https://host:99999/x', 'https://user:password@host/x']],
+                     {key: value for key, value in self.registration().items() if key != 'profileImageUrl'}]:
             with self.subTest(body=list(body)):
                 self.assertEqual(self.same('POST', '/api/auth/register', json=body).status_code, 400)
         self.assertEqual(self.same('POST', '/api/auth/register', json=self.registration('user0')).status_code, 409)
@@ -201,7 +200,7 @@ class Contracts(unittest.TestCase):
 
     def test_files_and_user_isolation(self):
         for creator in self.clients:
-            for file_type in ['image/png','text/plain','application/pdf','application/octet-stream']:
+            for file_type in ['image/png','text/plain']:
                 body = {'name':'Archivo <b>á</b>.txt','type':file_type,'url':'https://storage.example/archivo%20con%20espacios'}
                 response = creator.post('/api/files',json=body,headers=self.headers())
                 self.assertEqual(response.status_code,201,response.text)
@@ -209,7 +208,10 @@ class Contracts(unittest.TestCase):
                 self.assertEqual(self.same('GET',f"/api/files/{file['id']}",headers=self.headers()).json(),{'file':file})
                 self.assertEqual(self.same('GET',f"/api/files/{file['id']}",headers=self.headers(1)).status_code,404)
                 self.assertIn(file,self.same('GET','/api/files',headers=self.headers()).json()['files'])
-        for body in [{},{'name':'x','type':'text/plain','url':'javascript:alert(1)'},{'name':'x','type':'invalid','url':'https://storage.example/x'}]:
+        for body in [{},{'name':'x','type':'text/plain','url':'javascript:alert(1)'},{'name':'x','type':'invalid','url':'https://storage.example/x'},
+                     {'name':'x.pdf','type':'application/pdf','url':'https://storage.example/x'},
+                     {'name':'x.bin','type':'application/octet-stream','url':'https://storage.example/x'},
+                     {'name':'x.csv','type':'text/plain','url':'https://storage.example/x'}]:
             self.assertEqual(self.same('POST','/api/files',json=body,headers=self.headers()).status_code,400)
         self.assertEqual(self.same('GET','/api/files/x',headers=self.headers()).status_code,400)
         self.assertEqual(self.same('GET','/api/files/999999',headers=self.headers()).status_code,404)

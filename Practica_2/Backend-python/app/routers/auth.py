@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException
 from psycopg2.extras import RealDictCursor
-from .. import database, security, storage, validation
+from .. import database, security, validation
 from ..serialize import row
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -15,14 +15,11 @@ def register(request: Request):
             cur.execute("SELECT id FROM users WHERE username = %s", (body["username"],))
             if cur.fetchone():
                 raise HTTPException(409, "El nombre de usuario ya existe")
-            image = body["profileImage"]
-            key = storage.build_key("profile-images", image["fileName"])
-            image_url = storage.upload_buffer(image["buffer"], key, image["contentType"])
             cur.execute(
                 """INSERT INTO users (username, email, password_hash, profile_image_url)
                    VALUES (%s, %s, %s, %s)
                    RETURNING id, username, email, profile_image_url, created_at""",
-                (body["username"], body["email"], security.hash_password(body["password"]), image_url),
+                (body["username"], body["email"], security.hash_password(body["password"]), body["profileImageUrl"]),
             )
             user = cur.fetchone()
             conn.commit()

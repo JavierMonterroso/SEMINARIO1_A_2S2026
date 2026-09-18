@@ -22,11 +22,10 @@ async function handleRegister(event) {
     const password = document.getElementById('reg-password').value;
     const confirmPassword = document.getElementById('reg-confirm-password').value;
     if (password !== confirmPassword) throw new Error('Las contrasenas no coinciden');
-    const profileImage = await filePayload(document.getElementById('reg-profile-image').files[0]);
-    if (!profileImage.contentType.startsWith('image/')) throw new Error('Selecciona una imagen de perfil');
+    const { url: profileImageUrl } = await uploadImage(document.getElementById('reg-profile-image').files[0]);
     await apiRequest('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ username: document.getElementById('reg-username').value.trim(), email: document.getElementById('reg-email').value.trim(), password, confirmPassword, profileImage }),
+      body: JSON.stringify({ username: document.getElementById('reg-username').value.trim(), email: document.getElementById('reg-email').value.trim(), password, confirmPassword, profileImageUrl }),
     });
     window.location.href = 'index.html?registered=1';
   } catch (error) { showError(error); }

@@ -23,7 +23,8 @@
       <form id="upload-form" onsubmit="handleUploadFile(event)">
         <div class="form-field">
           <label for="file-input">Archivo</label>
-          <input type="file" id="file-input" required />
+          <input type="file" id="file-input" accept="image/*,.txt" required />
+          <p>Selecciona una imagen o un archivo .txt (maximo 5 MB).</p>
         </div>
         <button type="submit" class="primary">Subir archivo</button>
         <p id="error-box" class="error-text"></p>

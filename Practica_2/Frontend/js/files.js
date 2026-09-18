@@ -83,16 +83,8 @@ async function handleUploadFile(event) {
   button.disabled = true;
   try {
     const file = document.getElementById('file-input').files[0];
-    const payload = await filePayload(file);
-    const uploadUrl = payload.contentType.startsWith('image/') ? CONFIG.UPLOAD_IMAGE_URL : CONFIG.UPLOAD_TEXT_URL;
-    if (!uploadUrl) throw new Error('La carga de archivos no esta disponible. Intenta mas tarde.');
-    const response = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.error || 'No se pudo subir el archivo');
-    }
-    const { url } = await response.json();
-    await apiRequest('/files', { method: 'POST', body: JSON.stringify({ name: file.name, type: payload.contentType, url }) });
+    const { url, type } = await uploadSelectedFile(file);
+    await apiRequest('/files', { method: 'POST', body: JSON.stringify({ name: file.name, type, url }) });
     event.target.reset();
     await loadFiles();
   } catch (error) { showError(error); }

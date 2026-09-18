@@ -35,19 +35,48 @@ function clearError() {
   const box = document.getElementById('error-box');
   if (box) box.textContent = '';
 }
-async function filePayload(file) {
+function validateFile(file) {
   if (!file || !file.size) throw new Error('Selecciona un archivo con contenido');
   if (file.size > 5 * 1024 * 1024) throw new Error('El archivo supera el limite de 5 MB');
+}
+function imageType(file) {
   const extension = file.name.split('.').pop().toLowerCase();
-  const types = { txt: 'text/plain', md: 'text/markdown', csv: 'text/csv', json: 'application/json', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', pdf: 'application/pdf' };
-  const contentType = file.type || types[extension] || 'application/octet-stream';
-  const data = await new Promise((resolve, reject) => {
+  const types = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', avif: 'image/avif', ico: 'image/x-icon' };
+  return file.type || types[extension] || '';
+}
+async function uploadRequest(uploadUrl, payload) {
+  if (!uploadUrl) throw new Error('La carga de archivos no esta disponible. Intenta mas tarde.');
+  const response = await fetch(uploadUrl, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.error || 'No se pudo subir el archivo');
+  if (typeof data.url !== 'string' || !/^https?:\/\/[^\s/?#]+(?:[/?#][^\s]*)?$/.test(data.url)) {
+    throw new Error('El servicio de carga no devolvio una URL valida');
+  }
+  return data.url;
+}
+async function uploadImage(file) {
+  validateFile(file);
+  const contentType = imageType(file);
+  if (!contentType.startsWith('image/')) throw new Error('Selecciona una imagen');
+  const image = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
     reader.readAsDataURL(file);
   });
-  return { fileName: file.name, contentType, data };
+  const url = await uploadRequest(CONFIG.UPLOAD_IMAGE_URL, { filename: file.name, contentType, image });
+  return { url, type: contentType };
+}
+async function uploadSelectedFile(file) {
+  validateFile(file);
+  if (imageType(file).startsWith('image/')) return uploadImage(file);
+  if (!file.name.toLowerCase().endsWith('.txt')) throw new Error('Solo se permiten imagenes y archivos .txt');
+  const content = await file.text();
+  if (!content) throw new Error('Selecciona un archivo con contenido');
+  const url = await uploadRequest(CONFIG.UPLOAD_TEXT_URL, { filename: file.name, content });
+  return { url, type: 'text/plain' };
 }
 function showUser() {
   const nav = document.getElementById('main-nav');

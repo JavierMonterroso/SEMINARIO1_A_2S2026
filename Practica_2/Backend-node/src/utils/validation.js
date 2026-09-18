@@ -1,5 +1,3 @@
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
 function fail(field) {
   const error = new Error(`El campo '${field}' es obligatorio o invalido`);
   error.status = 400;
@@ -24,21 +22,16 @@ function password(value, field) {
   return result;
 }
 
-function upload(value, field = 'profileImage', imageOnly = true) {
-  object(value, field);
-  const fileName = text(value.fileName, `${field}.fileName`, 255);
-  const contentType = text(value.contentType, `${field}.contentType`, 100);
-  if (!/^[\w.+-]+\/[\w.+-]+$/.test(contentType) || (imageOnly && !contentType.startsWith('image/'))) fail(`${field}.contentType`);
-  const data = value.data;
-  if (typeof data !== 'string' || !data || data.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) fail(`${field}.data`);
-  const buffer = Buffer.from(data, 'base64');
-  if (!buffer.length || buffer.toString('base64') !== data) fail(`${field}.data`);
-  if (buffer.length > MAX_FILE_SIZE) {
-    const error = new Error('El archivo supera el limite de 5 MB');
-    error.status = 413;
-    throw error;
+function publicUrl(value, field) {
+  const result = text(value, field, 4096);
+  if (!/^https?:\/\/[^\s/?#]+(?:[/?#][^\s]*)?$/.test(result)) fail(field);
+  try {
+    const parsed = new URL(result);
+    if (!parsed.hostname || parsed.username || parsed.password) fail(field);
+  } catch {
+    fail(field);
   }
-  return { fileName, contentType, buffer };
+  return result;
 }
 
 function register(value) {
@@ -53,7 +46,7 @@ function register(value) {
     error.status = 400;
     throw error;
   }
-  return { username, email, password: plain, profileImage: upload(value.profileImage) };
+  return { username, email, password: plain, profileImageUrl: publicUrl(value.profileImageUrl, 'profileImageUrl') };
 }
 
 function login(value) {
@@ -82,9 +75,9 @@ function file(value) {
   object(value);
   const name = text(value.name, 'name', 255);
   const type = text(value.type, 'type', 100);
-  const url = text(value.url, 'url', 4096);
+  const url = publicUrl(value.url, 'url');
   if (!/^[\w.+-]+\/[\w.+-]+$/.test(type)) fail('type');
-  if (!/^https?:\/\/[^\s/?#]+(?:[/?#][^\s]*)?$/.test(url)) fail('url');
+  if (!type.startsWith('image/') && (type !== 'text/plain' || !name.toLowerCase().endsWith('.txt'))) fail('type');
   return { name, type, url };
 }
 
