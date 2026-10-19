@@ -23,7 +23,7 @@ export async function handler(event) {
     return response(201, { key });
   } catch (error) {
     if (error.statusCode) return response(error.statusCode, { error: error.message });
-    console.error('Error al guardar la imagen:', error.name);
+    console.error('Error al guardar la imagen:', error.name, error.message);
     return response(500, { error: 'No se pudo guardar la imagen' });
   }
 }
