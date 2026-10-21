@@ -6,8 +6,8 @@
 | Integrante | Carné | Área |
 | --- | --- | --- |
 | Daved Abshalon Ejcalon Chonay | 202105668 | Identidad y flujo serverless: IAM, Cognito, Rekognition, Lambda y API Gateway |
-| Hernán | *pendiente* | Datos y almacenamiento: RDS, S3, Translate, Polly y Lex |
-| Javier | *pendiente* | Cómputo y red: EC2, Security Groups y Load Balancer |
+| Hernán Ricardo Ávila Castillo | 9516085 | Datos y almacenamiento: RDS, S3, Translate, Polly y Lex |
+| Javier Andrés Monterroso García | 202102140 | Cómputo y red: EC2, Security Groups y Load Balancer |
 
 ---
 
@@ -213,7 +213,21 @@ Los nombres `semi1proyecto-g3` y `proyecto-web-g3` ya existían en otra cuenta d
 | `semi1proyecto-g3-393698973824` | `Fotos_Perfil/` y `Fotos_Publicadas/` | Lectura pública solo de las dos carpetas |
 | `proyecto-web-g3-393698973824` | Build del frontend (`index.html`, `assets/`) | Hosting estático público |
 
-> 📷 *Captura pendiente (Hernán): buckets y carpetas.*
+![Buckets del proyecto](Docs/Imgs/13%20-%20S3%20buckets%20del%20proyecto.jpg)
+
+*Los dos buckets del proyecto en la región us-east-1.*
+
+![Carpetas del bucket de imágenes](Docs/Imgs/14%20-%20S3%20bucket%20de%20imagenes%20carpetas.jpg)
+
+*Bucket de imágenes con las carpetas `Fotos_Perfil/` y `Fotos_Publicadas/`.*
+
+![Política de lectura pública](Docs/Imgs/15%20-%20S3%20politica%20de%20lectura%20publica.jpg)
+
+*Política del bucket de imágenes: lectura pública (`s3:GetObject`) solo de las dos carpetas.*
+
+![Hosting estático](Docs/Imgs/16%20-%20S3%20hosting%20estatico.jpg)
+
+*Alojamiento de sitio web estático habilitado en el bucket del frontend.*
 
 ### 5.5 Amazon RDS
 
@@ -226,7 +240,13 @@ Los nombres `semi1proyecto-g3` y `proyecto-web-g3` ya existían en otra cuenta d
 
 Hemos definido el esquema en [`Database/schema.sql`](Database/schema.sql): las tablas `users`, `friendships`, `posts`, `labels`, `post_labels`, `comments` y `messages`, y la vista `friends`, que lista las amistades aceptadas en ambas direcciones.
 
-> 📷 *Captura pendiente (Hernán): instancia de RDS.*
+![Instancia de RDS](Docs/Imgs/17%20-%20RDS%20instancia%20disponible.jpg)
+
+*Instancia `semi-social-db` disponible (PostgreSQL, `db.t3.micro`).*
+
+![Resumen y conectividad de RDS](Docs/Imgs/18%20-%20RDS%20resumen%20y%20conectividad.jpg)
+
+*Resumen y datos de conexión de la base de datos.*
 
 ### 5.6 Instancias EC2 y Security Groups
 
@@ -265,7 +285,17 @@ Administramos las instancias con **Session Manager**, sin abrir el puerto 22.
 | Alias | `prod` (`UWNRGVX3QN`) con la Lambda `lex-facultad` como code hook |
 | Intents | `HorarioFacultad`, `UbicacionFacultad`, `CarrerasFacultad`, `InscripcionFacultad`, `ContactoFacultad` |
 
-> 📷 *Captura pendiente (Hernán): configuración del bot.*
+![Detalle del bot de Lex](Docs/Imgs/19%20-%20Lex%20detalle%20del%20bot.jpg)
+
+*Bot `FacultadIngenieriaBot` en español (EE. UU.).*
+
+![Intenciones del bot](Docs/Imgs/20%20-%20Lex%20intenciones.jpg)
+
+*Las cinco intenciones del bot más `FallbackIntent`.*
+
+![Alias prod](Docs/Imgs/21%20-%20Lex%20alias%20prod.jpg)
+
+*Alias `prod`, vinculado a la versión 1, con la Lambda `lex-facultad` como cumplimiento.*
 
 ### 5.9 Rekognition, Translate y Polly
 
