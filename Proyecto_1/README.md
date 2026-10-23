@@ -54,7 +54,13 @@ Hemos duplicado el backend en dos instancias EC2, una en **Node.js** y otra en *
 
 ## 3. Arquitectura
 
-> 📷 *Pendiente de implementar (Javier): diagrama y descripción de la arquitectura.*
+![Diagrama de arquitectura de Semi-Social](Docs/Imgs/22%20-%20Arquitectura.svg)
+
+*El navegador obtiene el sitio desde S3 y envía las solicitudes del API al balanceador, que las distribuye entre Node.js y Python.*
+
+[Abrir el diagrama editable en draw.io](Docs/arquitectura.drawio).
+
+El ALB recibe las solicitudes del frontend y las distribuye entre los dos backends. Ambos consultan la misma base de datos y usan el perfil `role-ec2-backend` para acceder a los servicios de AWS. La carga de imágenes pasa del backend a API Gateway, luego a Lambda y finalmente al bucket de imágenes. El ALB ocupa subredes de `us-east-1a` y `us-east-1c`; las dos EC2 están en `us-east-1c`.
 
 ---
 
@@ -257,13 +263,33 @@ Hemos definido el esquema en [`Database/schema.sql`](Database/schema.sql): las t
 
 | Security group | Entrada permitida | Origen |
 | --- | --- | --- |
-| `sg-alb` | TCP 80 | `0.0.0.0/0` |
-| `sg-ec2` | TCP 3000 | Solo `sg-alb` |
-| `sg-rds` | TCP 5432 | Solo `sg-ec2` |
+| `semi-social-alb-sg` | TCP 80 | `0.0.0.0/0` |
+| `semi-social-ec2-sg` | TCP 3000 | Solo `semi-social-alb-sg` |
+| `semi-social-rds-sg` | TCP 5432 | Solo `semi-social-ec2-sg` |
 
-Administramos las instancias con **Session Manager**, sin abrir el puerto 22.
+Los nombres `sg-alb`, `sg-ec2` y `sg-rds` de la planificación identifican estas mismas funciones; los nombres de la tabla son los usados en AWS.
 
-> 📷 *Capturas pendientes (Javier): instancias EC2 y security groups.*
+El acceso administrativo comprobado fue mediante **Termius por SSH**. En las capturas de configuración, ambas EC2 también tenían asociado `launch-wizard-1`, cuya regla TCP 22 desde `0.0.0.0/0` sigue pendiente de restringir o retirar tras asegurar el acceso del equipo.
+
+![Instancia EC2 Python](Docs/Imgs/23%20-%20EC2%20de%20python.png)
+
+*`semi-social-python` en ejecución, con el perfil de instancia `role-ec2-backend`.*
+
+![Instancia EC2 Node.js](Docs/Imgs/24%20-%20EC2%20de%20node.png)
+
+*`semi-social-node` en ejecución, con el mismo perfil de instancia.*
+
+![Regla de entrada del security group de EC2](Docs/Imgs/25%20-%20semi-social-ec2-sg.png)
+
+*`semi-social-ec2-sg` permite TCP 3000 desde `semi-social-alb-sg`.*
+
+![Regla de entrada del security group del ALB](Docs/Imgs/27%20-%20semi-social-alb-sg.png)
+
+*`semi-social-alb-sg` permite HTTP 80 desde Internet.*
+
+![Regla de entrada del security group de RDS](Docs/Imgs/29%20-%20semi-social-rds-sg.png)
+
+*`semi-social-rds-sg` permite PostgreSQL 5432 desde `semi-social-ec2-sg`.*
 
 ### 5.7 Load Balancer
 
@@ -273,9 +299,31 @@ Administramos las instancias con **Session Manager**, sin abrir el puerto 22.
 | Listener | HTTP 80, que reenvía al target group `tg-semi-social` |
 | Target group | Las 2 EC2, puerto 3000, health check en `/api/health` |
 
-`/api/health` responde `{"status":"ok","backend":"node"}` o `"python"`, lo que nos permite comprobar que el balanceador alterna entre las dos instancias. Al detener una, la aplicación sigue respondiendo con la otra.
+`/api/health` responde `{"status":"ok","backend":"node"}` o `"python"`. Con las dos EC2 en ejecución, una serie de 12 solicitudes al ALB recibió respuestas de ambos backends. Después detuvimos la EC2 de Node.js y las 12 solicitudes siguientes respondieron desde Python. Esta prueba confirma la continuidad del endpoint de salud; la aplicación completa requiere una prueba adicional desde el frontend.
 
-> 📷 *Capturas pendientes (Javier): target group con los 2 destinos healthy y prueba de caída.*
+![Balanceador de carga activo](Docs/Imgs/31%20-%20balanceador%20de%20carga.png)
+
+*`semi-social-alb` activo en dos zonas de disponibilidad, con su nombre DNS público.*
+
+![Agente de escucha del balanceador](Docs/Imgs/36%20-%20balanceador%20de%20carga.png)
+
+*El agente de escucha HTTP 80 reenvía el 100 % del tráfico a `tg-semi-social`.*
+
+![Grupo de destino en buen estado](Docs/Imgs/32%20-%20grupo%20destino.png)
+
+*`tg-semi-social` registra las dos EC2 en el puerto 3000; ambas aparecen en buen estado.*
+
+![Configuración de la comprobación de estado](Docs/Imgs/35%20-%20grupo%20destino.png)
+
+*El grupo de destino comprueba `GET /api/health` por HTTP y acepta el código 200.*
+
+![Respuestas de los dos backends](Docs/Imgs/33%20-%20Prueba%20de%20caida%20parte1.png)
+
+*Con ambas instancias en ejecución, el ALB responde desde Node.js y Python.*
+
+![Respuesta al detener Node.js](Docs/Imgs/34%20-%20Prueba%20de%20caida%20parte2.png)
+
+*Al detener `semi-social-node`, el ALB siguió respondiendo desde `semi-social-python`.*
 
 ### 5.8 Amazon Lex
 
